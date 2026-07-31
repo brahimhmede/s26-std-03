@@ -13,6 +13,16 @@ from pptx import Presentation
 # to Python's import path, exactly as the shared GUI does.
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONVERTER_DIR = REPOSITORY_ROOT / "src" / "main" / "pptx-converter"
+if not CONVERTER_DIR.is_dir():
+    for candidate in REPOSITORY_ROOT.rglob("pptx_exporter.py"):
+        if candidate.parent.name == "pptx-converter":
+            CONVERTER_DIR = candidate.parent
+            break
+    else:
+        raise FileNotFoundError(
+            f"Could not locate the pptx-converter directory under {REPOSITORY_ROOT}"
+        )
+
 if str(CONVERTER_DIR) not in sys.path:
     sys.path.insert(0, str(CONVERTER_DIR))
 
