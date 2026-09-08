@@ -404,6 +404,7 @@ class PPTXExporter(Exporter):
                 "explicit": "explicit source",
                 "product_root": "product root",
                 "previous_continuation": "previous continuation",
+                "branch_continuation": "unresolved branch",
                 "unspecified_branch": "unresolved branch",
             }[method]
             self._rect(slide, 0.65, 1.7, 12.0, 0.48, self.SKY, self.SKY)
@@ -446,8 +447,9 @@ class PPTXExporter(Exporter):
         for component in step.outputs:
             if component.image:
                 values.append((component.image, component.name))
-        if step.continues_as and step.continues_as.image:
-            values.append((step.continues_as.image, step.continues_as.name))
+        for continuation in step.continues_as:
+            if continuation.image:
+                values.append((continuation.image, continuation.name))
         deduped: list[tuple[str, str]] = []
         seen: set[str] = set()
         for value, caption in values:
@@ -474,10 +476,10 @@ class PPTXExporter(Exporter):
             lines = ["• No separate output component encoded"]
         max_output_lines = 3 if h < 3 else 5
         self._text(slide, "\n".join(lines[:max_output_lines]), x + 0.25, y + 0.55, w - 0.5, 0.75 if h < 3 else 1.3, 10 if h < 3 else 11, False, self.INK)
-        continuation = (
-            f"{step.continues_as.name} ({step.continues_as.weight_label})"
-            if step.continues_as else "End of this branch"
-        )
+        continuation = ", ".join(
+            f"{component.name} ({component.weight_label})"
+            for component in step.continues_as
+        ) or "End of this branch"
         continuation_y = y + (1.35 if h < 3 else 2.0)
         self._text(slide, "CONTINUES AS", x + 0.25, continuation_y, w - 0.5, 0.2, 9, True, self.TEAL)
         self._text(slide, continuation, x + 0.25, continuation_y + 0.24, w - 0.5, 0.42, 10, False, self.INK)
@@ -526,7 +528,7 @@ class PPTXExporter(Exporter):
         self._text(slide, actions, x + 3.5, y + 0.12, 4.05, h - 0.24, 10, False, self.INK)
         outputs = ", ".join(component.name for component in step.outputs) or "No separate output"
         self._text(slide, outputs, x + 7.72, y + 0.12, 2.3, h - 0.24, 10, False, self.INK)
-        continuation = step.continues_as.name if step.continues_as else "End branch"
+        continuation = ", ".join(component.name for component in step.continues_as) or "End branch"
         self._text(slide, continuation, x + 10.18, y + 0.12, 1.55, h - 0.24, 9, False, self.MUTED)
 
     def _closing_slide(self, prs, document, selected_steps):

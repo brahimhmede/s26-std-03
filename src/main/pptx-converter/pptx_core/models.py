@@ -107,7 +107,7 @@ class Component:
         known = {
             "node_id", "id", "name", "weight", "weight_unit", "measured_weight",
             "actual_weight", "material", "color", "quality", "grading", "destination",
-            "image", "kept_whole", "contained_leaf_count",
+            "image", "image_path", "kept_whole", "contained_leaf_count",
         }
         return cls(
             node_id=data.get("node_id", data.get("id")),
@@ -119,7 +119,7 @@ class Component:
             color=data.get("color"),
             quality=data.get("quality", data.get("grading")),
             destination=data.get("destination"),
-            image=_image_reference(data.get("image")),
+            image=_image_reference(data.get("image") or data.get("image_path")),
             kept_whole=bool(data.get("kept_whole", False)),
             contained_leaf_count=data.get("contained_leaf_count"),
             extra={key: item for key, item in data.items() if key not in known},
@@ -158,12 +158,12 @@ class Action:
     @classmethod
     def from_any(cls, value: Any) -> "Action":
         data = _mapping(value)
-        known = {"node_id", "id", "text", "name", "tools", "image", "safety", "safety_notices"}
+        known = {"node_id", "id", "text", "name", "tools", "image", "image_path", "safety", "safety_notices"}
         return cls(
             node_id=data.get("node_id", data.get("id")),
             text=str(data.get("text") or data.get("name") or "").strip(),
             tools=_labels(data.get("tools")),
-            image=_image_reference(data.get("image")),
+            image=_image_reference(data.get("image") or data.get("image_path")),
             safety_notices=_labels(data.get("safety_notices", data.get("safety"))),
             extra={key: item for key, item in data.items() if key not in known},
         )
@@ -177,7 +177,7 @@ class Step:
     source_explicit: bool = False
     actions: list[Action] = field(default_factory=list)
     outputs: list[Component] = field(default_factory=list)
-    continues_as: Component | None = None
+    continues_as: list[Component] = field(default_factory=list)
     tools_required: list[str] = field(default_factory=list)
     safety_notices: list[str] = field(default_factory=list)
     image: str | None = None
@@ -204,7 +204,12 @@ class Step:
                 if item is not None
                 and (component := Component.from_any(item)) is not None
             ],
-            continues_as=Component.from_any(data.get("continues_as")),
+            continues_as=[
+                component
+                for item in _as_list(data.get("continues_as"))
+                if item is not None
+                and (component := Component.from_any(item)) is not None
+            ],
             tools_required=_labels(data.get("tools_required", data.get("tools"))),
             safety_notices=_labels(data.get("safety_notices", data.get("safety"))),
             image=_image_reference(data.get("image")),
@@ -319,8 +324,10 @@ class WizardDocument:
         if position == 0:
             return self.product, "product_root"
         previous = self.steps[position - 1]
-        if previous.continues_as is not None:
-            return previous.continues_as, "previous_continuation"
+        if len(previous.continues_as) == 1:
+            return previous.continues_as[0], "previous_continuation"
+        if previous.continues_as:
+            return None, "branch_continuation"
         return None, "unspecified_branch"
 
     def position_of(self, target: Step) -> int:
@@ -396,5 +403,4 @@ class WizardDocument:
             if step.source:
                 yield step.source
             yield from step.outputs
-            if step.continues_as:
-                yield step.continues_as
+            yield from step.continues_as

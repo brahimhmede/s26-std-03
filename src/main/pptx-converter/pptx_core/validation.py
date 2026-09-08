@@ -104,7 +104,8 @@ class ComponentRule:
             inspect(step.source, f"steps[{step_index}].source")
             for output_index, component in enumerate(step.outputs):
                 inspect(component, f"steps[{step_index}].outputs[{output_index}]")
-            inspect(step.continues_as, f"steps[{step_index}].continues_as")
+            for continuation_position, component in enumerate(step.continues_as):
+                inspect(component, f"steps[{step_index}].continues_as[{continuation_position}]")
         return issues
 
 
@@ -184,8 +185,7 @@ class StepMassBalanceRule:
             if source is None or source.weight is None:
                 continue
             children = [*step.outputs]
-            if step.continues_as is not None:
-                children.append(step.continues_as)
+            children.extend(step.continues_as)
             if not children or any(component.weight is None for component in children):
                 continue
             try:
@@ -231,8 +231,11 @@ class ImagePathRule:
                 inspect(action.image, f"steps[{step_position}].actions[{action_position}].image")
             for output_position, component in enumerate(step.outputs):
                 inspect(component.image, f"steps[{step_position}].outputs[{output_position}].image")
-            if step.continues_as:
-                inspect(step.continues_as.image, f"steps[{step_position}].continues_as.image")
+            for continuation_position, component in enumerate(step.continues_as):
+                inspect(
+                    component.image,
+                    f"steps[{step_position}].continues_as[{continuation_position}].image",
+                )
         return issues
 
 

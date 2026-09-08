@@ -29,7 +29,7 @@ if str(CONVERTER_DIR) not in sys.path:
 from pptx_exporter import export_to_pptx  # noqa: E402
 from pptx_core import PPTXExportEngine  # noqa: E402
 
-SAMPLE = CONVERTER_DIR / "data" / "example_air_fryer.json"
+SAMPLE = CONVERTER_DIR / "data" / "example_air_fryer (1).json"
 
 
 def _presentation_text(path: Path) -> str:
