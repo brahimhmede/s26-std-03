@@ -218,10 +218,7 @@ class ImagePathRule:
         def inspect(value: str | None, location: str) -> None:
             if not value or value.startswith("data:image/") or value.startswith(("http://", "https://")):
                 return
-            path = Path(value).expanduser()
-            if not path.is_absolute():
-                path = base / path
-            if not path.exists():
+            if resolve_image(value, document.source_dir) is None:
                 issues.append(ValidationIssue(self.name, "warning", f"Image file not found: {value}", location))
 
         inspect(document.product.image, "product.image")

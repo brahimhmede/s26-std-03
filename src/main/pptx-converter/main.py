@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         "json_path",
         nargs="?",
         default=str(DEFAULT_INPUT),
-        help="Builder/IR JSON path. Defaults to the included Air Fryer example.",
+        help="Builder/IR JSON path. Defaults to the included Nespresso example.",
     )
     parser.add_argument(
         "output_path",
